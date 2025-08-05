@@ -3,6 +3,8 @@ class ApiResponce {
         this.statusCode = statusCode
         this.deta = deta
         this.message = message
-        this.Success = statusCode <400
+        this.Success = statusCode < 400
     }
 }
+
+export { ApiResponce }
