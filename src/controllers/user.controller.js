@@ -1,10 +1,9 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
-import {User, user} from "../models/user.model.js"
+import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
-import {ApiResponce} from "../utils/ApiError.js"
+import {ApiResponce} from "../utils/ApiResponse.js"
 
-import { use } from "react";
 
 
 const registerUser = asyncHandler( async (req, res) =>{
@@ -18,17 +17,19 @@ const registerUser = asyncHandler( async (req, res) =>{
     // check for user creation
     // return response  
 
-    const {fullname, email, username, password} = req.body;
-    console.log("email:", email); 
+    console.log("FILES:", req.files);
+    console.log("BODY:", req.body);
+    const {fullName, email, username, password} = req.body;
+    
 
    if( 
-    [fullname, email, username, password].some((field) => 
+    [fullName, email, username, password].some((field) => 
     field?.trim() === "")
    ){
         throw new ApiError(400, "All field are required")
    }
-    
-   const existedUser = User.findOne({
+     
+   const existedUser = await User.findOne({
     $or: [{username}, {email}]
    })
 
@@ -37,7 +38,18 @@ const registerUser = asyncHandler( async (req, res) =>{
    }
 
    const avatarLocalPath =  req.files?.avatar[0]?.path;
-   const coverImageLocalPath =   req.fiels?.coverImage[0]?.path;
+   // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+   /* let coverImageLocalPath;
+   if(req.fields && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path
+   }*/ // change code according to chatGPT
+
+     let coverImageLocalPath;
+     if (Array.isArray(req.files?.coverImage) && req.files.coverImage.length > 0) {
+     coverImageLocalPath = req.files.coverImage[0].path;
+}
+
 
    if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required")
@@ -45,15 +57,17 @@ const registerUser = asyncHandler( async (req, res) =>{
  
    const avatar = await uploadOnCloudinary(avatarLocalPath);
    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+     console.log(avatar);
 
      if (!avatar) {
     throw new ApiError(400, "Avatar file is required")
    }
 
+
    const user = await User.create({
-    fullname,
+    fullName,
     avatar : avatar.url,
-    coverImage: coverImage.url,
+    coverImage: coverImage?.url || "",
     email,
     password,
     username: username.toLowerCase()
@@ -61,7 +75,7 @@ const registerUser = asyncHandler( async (req, res) =>{
 
    const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
-   )
+   );
 
     if (!createdUser) {
         throw new ApiError(500, "Somthing went wrong while registering the user");
