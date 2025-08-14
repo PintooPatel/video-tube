@@ -4,7 +4,6 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponce } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
-import { use } from "react";
 import { Subscription } from "../models/subscription.model.js";
 import mongoose from "mongoose";
 
@@ -90,8 +89,6 @@ const registerUser = asyncHandler(async (req, res) => {
     );
 });
 
-
-
 const loginUser = asyncHandler(async (req,res) => {
     // req.body -> data
     //username or email
@@ -146,8 +143,14 @@ const loginUser = asyncHandler(async (req,res) => {
 const logoutUser = asyncHandler(async(req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
-        { $set: {refreshToken: undefined}},
-        {new:true}
+        { 
+            $unset: {
+                refreshToken: 1 //this remove the field from document
+            }
+        },
+        {
+            new:true
+        }
     );
 
     const options =  {
